@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluefy Controller</title>
+    <!-- Added Tailwind CSS CDN to ensure the classes work correctly -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 p-5">
+    <div class="max-w-sm mx-auto bg-white shadow-lg rounded-2xl p-6">
+        <h1 class="text-xl font-bold mb-4 text-center">Bluefy BLE Control</h1>
+        
+        <button id="btn" class="w-full py-4 bg-blue-600 text-white rounded-xl font-bold active:bg-blue-700 transition-colors">
+            Connect and Read TVRC
+        </button>
+        
+        <div id="log" class="mt-4 p-3 bg-gray-900 text-green-400 text-xs font-mono h-48 overflow-y-auto rounded-lg border border-gray-700">
+            <div>> System Ready</div>
+        </div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('btn');
+        const logDiv = document.getElementById('log');
+
+        /**
+         * Appends a message to the on-screen log console
+         * @param {string} m - The message to display
+         */
+        function log(m) { 
+            const entry = document.createElement('div');
+            entry.textContent = `> ${m}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight; 
+        }
+
+        btn.onclick = async () => {
+            log('Starting scan...');
+            try {
+                // Requesting the Bluetooth device
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'TVRC' }],
+                    optionalServices: [0x5F01]
+                });
+
+                log('Connected to: ' + device.name);
+
+                // Connecting to the GATT server
+                const server = await device.gatt.connect();
+                log('GATT Server connected');
+
+                // Accessing the specific service
+                const service = await server.getPrimaryService(0x5F01);
+                
+                // Accessing the specific characteristic
+                const char = await service.getCharacteristic(0x5F01);
+                
+                // Reading the value
+                const value = await char.readValue();
+                log('Read Successful!');
+                
+                // Disconnecting after operation
+                device.gatt.disconnect();
+                log('Disconnected.');
+            } catch (e) {
+                // Handling errors (e.g., user cancelled, device not found, etc.)
+                log('Error: ' + e.message);
+                console.error(e);
+            }
+        };
+    </script>
+</body>
+</html>
